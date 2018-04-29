@@ -24,7 +24,7 @@ def read(fname):
 
 setup(
     name = "pushfin",
-    version = "0.2.0",
+    version = "0.2.1",
     author = "Steffen Vogel",
     author_email = "post@steffenvogel.de",
     description = "Publishes bank account transactions and balances via MQTT, Telegram and Pushover.",

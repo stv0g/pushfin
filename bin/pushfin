@@ -42,7 +42,8 @@ def get_telegram_chat_id(config):
 	conn.request("POST", "/bot%s/getUpdates" % config['token'])
 
 	resp = conn.getresponse()
-	updates = json.loads(resp.read())
+	body = resp.read().decode("utf-8")
+	updates = json.loads(body)
 
 	if updates['ok']:
 		for result in updates['result']:
