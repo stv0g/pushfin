@@ -1,0 +1,32 @@
+format: "{trx.posting_text} {trx.dir} {trx.applicant_name}: <i>{trx.purpose}</i> <b><font color=\"{trx.color}\">{trx.value}</font></b> {trx.currency} (Balance: {bal.value} {bal.currency})"
+format_date: "%Y-%m-%d"
+
+templates:
+  - status:
+      C: # Credit
+        - dir: "von"
+        - color: "#009933"
+      D: # Debit:
+        - dir: "an"
+        - color: "#990000"
+  - currency:
+      EUR:
+        - currency_symbol: "€"
+      USD:
+        - currency_symbol: "$"
+
+mqtt:
+  broker: localhost
+  topic: pushfin-ingdiba
+
+pushover:
+  title: "Ing-DiBa"
+  user: XXXXX
+  token: XXXXX
+
+fints:
+  url: "https://fints.ing-diba.de/fints/"
+  blz: "XXXXX"
+  iban: "XXXXX"
+  login: "XXXXX"
+  pin: "'XXXXX"
