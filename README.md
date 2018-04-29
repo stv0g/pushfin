@@ -3,8 +3,12 @@
 ## Setup
 
 1. Install pushfin: `pip3 install pushfin`
-2. Create configuration file at: `~/.pushfin.yaml`
+2. Create configuration file at: `~/.pushfin.yaml`. Take a look at the [example configuration](https://github.com/stv0g/pushfin/blob/master/etc/pushfin.yaml).
 3. Add pushfin to crontab: `crontab -e`:
+
+```
+12 * * * * pushfin
+````
 
 ## Transaction fields for formatting
 
@@ -18,14 +22,13 @@ Common fields are listed below:
 | :--						| :-- | :-- |
 | `trx[status]`					| 'D' | 'D' = Debit, 'C' = Credit |
 | `trx[funds_code]`				| None |
-| `trx[amount]`					| <-46.5 EUR> |
 | `trx[id]`					| 'NMSC' |
 | `trx[customer_reference]`			| None |
 | `trx[bank_reference]`				| None |
 | `trx[extra_details]`				| '' |
 | `trx[currency]`				| 'EUR' |
-| `trx[date]`					| Date(2018, 1, 2) |
-| `trx[entry_date]`				| Date(2018, 1, 2) |
+| `trx[date]`					| | Unix Timestamp |
+| `trx[entry_date]`				| | Unix Timestamp |
 | `trx[transaction_code]`			| '020' |
 | `trx[posting_text]`				| 'Überweisung' |
 | `trx[prima_nota]`				| '006200' |
@@ -63,10 +66,10 @@ For ease formatting, we extended the standard MT940 fields with the following he
 | `trx[date_fmt]`				| '2018-04-28'	| A formatted date of the `date` field |
 | `trx[entry_date_ts]`				| 1525007188	| A Unix timestamp of the `entry_date` field |
 | `trx[entry_date_fmt]`				| '2018-04-28'	| A formatted date of the `entry_date` field |
-| `trx[value]`					| -20.42	| Just the amount of the transaction (see `amount`) |
+| `trx[amout]`					| -20.42	| Just the amount of the transaction (see `amount`) |
 | `trx[dir]`					| 'from'/'to'	| |
 | `trx[color]`					| '#009933'	| |
-| `bal[value]`					| '3.52'	| |
+| `bal[amount]`					| '3.52'	| |
 | `bal[currency]`				| 'EUR'		| Current balance valuta |
 | `bal[date]`					| '2018-03-23'	| Balance currency |
 | `bal[date_fmt]`				|		| Date of last valuta |

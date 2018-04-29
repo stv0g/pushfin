@@ -1,5 +1,11 @@
-format: "{trx.posting_text} {trx.dir} {trx.applicant_name}: <i>{trx.purpose}</i> <b><font color=\"{trx.color}\">{trx.value}</font></b> {trx.currency} (Balance: {bal.value} {bal.currency})"
 format_date: "%Y-%m-%d"
+
+fints:
+  server: "https://fints.ing-diba.de/fints/"
+  blz: "XXXXX"
+  iban: "XXXXX"
+  login: "XXXXX"
+  pin: "'XXXXX"
 
 templates:
   - status:
@@ -16,17 +22,21 @@ templates:
         - currency_symbol: "$"
 
 mqtt:
-  broker: localhost
-  topic: pushfin-ingdiba
+  topic: pushfin/ingdiba
+  hostname: 192.168.0.2
+  port: 1883
+  auth:
+    username: "guest"
+    password: "guest"
+
+telegram:
+  format: "{trx[posting_text]} {trx[dir]} {trx[applicant_name]}: <i>{trx[purpose]}</i> <b>{trx[amount]}</b> {trx[currency]} (Balance: {bal[amount]} {bal[currency]})"
+  token: "XXXXX"
+  user: stv0g
 
 pushover:
+  format: "{trx.posting_text} {trx.dir} {trx.applicant_name}: <i>{trx.purpose}</i> <b><font color=\"{trx.color}\">{trx.value}</font></b> {trx.currency} (Balance: {bal.value} {bal.currency})"
   title: "Ing-DiBa"
   user: XXXXX
   token: XXXXX
-
-fints:
-  url: "https://fints.ing-diba.de/fints/"
-  blz: "XXXXX"
-  iban: "XXXXX"
-  login: "XXXXX"
-  pin: "'XXXXX"
+  html: 1

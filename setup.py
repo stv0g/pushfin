@@ -24,12 +24,12 @@ def read(fname):
 
 setup(
     name = "pushfin",
-    version = "0.1.0",
+    version = "0.2.0",
     author = "Steffen Vogel",
     author_email = "post@steffenvogel.de",
-    description = "Publishes bank account statements via MQTT and Pushover.",
+    description = "Publishes bank account transactions and balances via MQTT, Telegram and Pushover.",
     license = "GPL-3.0",
-    keywords = "HBCI FinTS Pushover MQTT",
+    keywords = "HBCI FinTS Pushover MQTT Telegram",
     url = "https://github.com/stv0g/pushfin",
     long_description = read('README.md'),
     scripts=[
@@ -40,7 +40,8 @@ setup(
     ],
     install_requires = [
 	'pyyaml',
-	'fints'
+	'fints',
+	'paho-mqtt'
     ],
     zip_safe = False,
     classifiers = [
