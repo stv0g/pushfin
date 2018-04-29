@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2018, Steffen Vogel"
+__credits__ = ["Steffen Vogel"]
+__license__ = "GPL-3.0"
+__version__ = "0.1.0"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
+__status__ = "Production"
+
+import sys
+import os.path
+import logging
+import yaml
+import time
+import datetime
+import urllib
+import hashlib
+import fints.client
+import http.client
+
+logger = logging.getLogger('pushfin')
+
+def hash_trx(trx):
+	m = hashlib.sha1()
+
+	m.update(trx['purpose'].encode('utf-8'))
+	m.update(trx['date_fmt'].encode('utf-8'))
+	m.update(trx['entry_date_fmt'].encode('utf-8'))
+	m.update(str(trx['value']).encode('utf-8'))
+	m.update(trx['currency'].encode('utf-8'))
+	m.update(trx['applicant_name'].encode('utf-8'))
+
+	return m.hexdigest()
+
+def get_transactions(blz, iban, login, pin, endpoint, start, end):
+	logger.info('Connect to: %s', endpoint)
+	f = fints.client.FinTS3PinTanClient(blz, login, pin, endpoint)
+
+	accounts = f.get_sepa_accounts()
+
+	# Find correct account
+	account = [a for a in accounts if a.iban == iban][0]
+	logger.info('Found account: %s', account)
+
+	statements = f.get_statement(account, start, end)
+	logger.info('Found %d statements from %s to %s', len(statements), start, end)
+
+	trxs = [t.data for t in statements]
+	balance = f.get_balance(account)
+	logger.info("Current Balance: {} {} {}".format(balance.date, balance.amount.amount, balance.amount.currency))
+
+	return trxs, balance, account
+
+def send_pushover(token, user, title, message, timestamp):
+	conn = http.client.HTTPSConnection("api.pushover.net:443")
+	conn.request("POST", "/1/messages.json",
+		urllib.parse.urlencode({
+			"token": token,
+			"user": user,
+			"title": title,
+			"message": message,
+			"timestamp": int(timestamp),
+			"html" : 1
+		}),
+		{
+			"Content-type": "application/x-www-form-urlencoded"
+		}
+	)
+	conn.getresponse()
+
+	logger.debug('Send via pushover: %s', message)
+
+def send_mqtt():
+	pass
+
+if __name__ == "__main__":
+	logging.basicConfig(level=logging.INFO)
+
+	fints_logger = logging.getLogger('fints')
+	fints_logger.setLevel(logging.WARN)
+
+	logger.setLevel(logging.DEBUG)
+
+	try:
+		with open(os.path.expanduser("~/.pushfin.yaml")) as f:
+			config = yaml.load(f)
+	except:
+		logger.error("Failed to open configuration file at: ~/.pushfin.yaml")
+		sys.exit(-1)
+
+	try:
+		with open(os.path.expanduser("~/.pushfin.state.yaml")) as f:
+			state = yaml.load(f)
+	except:
+		last = datetime.date.today() - datetime.timedelta(weeks = 1)
+
+		state = {
+			'hashes' : { },
+			'last' : last.toordinal()
+		}
+
+	start = datetime.date.fromordinal(state['last']-1)
+	end = datetime.date.today()
+
+	trxs, balance, account = get_transactions(
+		config['fints']['blz'],
+		config['fints']['iban'],
+		config['fints']['login'],
+		config['fints']['pin'],
+		config['fints']['url'],
+		start, end,
+	)
+
+	logger.debug("Current state: %s", state)
+
+	for trx in trxs:
+		if 'entry_date' in trx:
+			trx['entry_date_ts'] = time.mktime(trx['entry_date'].timetuple())
+			trx['entry_date_fmt'] = trx['entry_date'].strftime(config['format_date'])
+		if 'date' in trx:
+			trx['date_ts'] = time.mktime(trx['date'].timetuple())
+			trx['date_fmt'] = trx['date'].strftime(config['format_date'])
+
+		if 'amount' in trx:
+			trx['value'] = trx['amount'].amount
+
+		for tpl in config['templates']:
+			field = list(tpl.keys())[0]
+
+			if field in trx:
+				value = trx[field]
+				if value in tpl[field]:
+					for entry in tpl[field][value]:
+						trx = {**entry, **trx}
+
+		hash = hash_trx(trx)
+
+		if hash in state['hashes']:
+			logger.info("Skipping old transaction: %s", hash)
+			continue
+		else:
+			logger.info("Processing transaction: %s", trx)
+
+		bal = {
+			'date' : balance.date,
+			'date_fmt' : balance.date.strftime(config['format_date']),
+			'value' : balance.amount.amount,
+			'currency' : balance.amount.currency
+		}
+
+		msg = config['format'].format(trx=trx, bal=bal)
+
+		if 'mqtt' in config:
+			send_mqtt()
+
+		if 'pushover' in config:
+			send_pushover(
+				config['pushover']['token'],
+				config['pushover']['user'],
+				config['pushover']['title'],
+				msg,
+				trx['date_ts']
+			)
+
+		# Remmeber that we already send this transaction
+		state['hashes'][hash] = trx['date'].toordinal()
+
+	# Save date of last transaction to config
+	new_state = {
+		'last' : end.toordinal(),
+		'hashes' : { }
+	}
+
+	# Remove hashes older than two weeks
+	for hash, date in state['hashes'].items():
+		if datetime.date.fromordinal(date+14) >= datetime.date.today():
+			new_state['hashes'][hash] = date
+
+	with open(os.path.expanduser("~/.pushfin.state.yaml"), mode='w') as f:
+		yml = yaml.dump(new_state, f)
