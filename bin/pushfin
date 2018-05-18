@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2018, Steffen Vogel"
@@ -27,12 +27,11 @@ logger = logging.getLogger('pushfin')
 def hash_trx(trx):
 	m = hashlib.sha1()
 
-	m.update(trx['purpose'].encode('utf-8'))
-	m.update(trx['date_fmt'].encode('utf-8'))
-	m.update(trx['entry_date_fmt'].encode('utf-8'))
+	for field in ['purpose', 'date_fmt', 'entry_date_fmt', 'currency', 'applicant_name', 'applicant_iban']:
+		if trx[field]:
+			m.update(trx[field].encode('utf-8'))
+
 	m.update(str(trx['amount']).encode('utf-8'))
-	m.update(trx['currency'].encode('utf-8'))
-	m.update(trx['applicant_name'].encode('utf-8'))
 
 	return m.hexdigest()
 
